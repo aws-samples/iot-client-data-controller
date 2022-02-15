@@ -1,0 +1,216 @@
+
+{
+  "Description" : "Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: MIT-0",
+  "Resources": {
+    "Connect": {
+      "Type": "AWS::IoT::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "iot:Connect",
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:iot:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":*"
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "PolicyName": "Connect"
+      }
+    },
+    "PublishTripData": {
+      "Type": "AWS::IoT::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "iot:Publish",
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:iot:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":topic/connctedcar/trip/${iot:Connection.Thing.ThingName}"
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "PolicyName": "PublishTripData"
+      }
+    },
+    "PublishTelemetry": {
+      "Type": "AWS::IoT::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "iot:Publish",
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:iot:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":topic/connctedcar/telemetry/${iot:Connection.Thing.ThingName}"
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "PolicyName": "PublishTelemetry"
+      }
+    },
+    "PublishDiagnosticsTroubleCodes": {
+      "Type": "AWS::IoT::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "iot:Publish",
+              "Resource": {
+                "Fn::Join": [
+                  "", [
+                    "arn:aws:iot:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":topic/connctedcar/dtc/${iot:Connection.Thing.ThingName}"
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "PolicyName": "PublishDiagnosticsTroubleCodes"
+      }
+    },
+    "PolicyAssociationLambdaRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "iot:UpdateThingShadow",
+                    "iot:DetachPolicy",
+                    "iot:AttachPolicy",
+                    "iot:ListThingPrincipals"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["logs:CreateLogGroup",
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"],
+                  "Resource": { "Fn::Sub": [ "arn:aws:logs:${region}:${account}:log-group:*", { "region": {"Ref": "AWS::Region"}, "account": {"Ref": "AWS::AccountId"}} ]}
+              }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "AdjustPolicies"
+          }
+        ],
+        "RoleName": "ConnectedVehicle-AdjustPolicies-Role"
+      }
+    },
+    "PolicyAssociationLambda": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "import json\nimport boto3\n\nclient = boto3.client('iot')\n\ndef attach(policy, cert):\n    response = client.attach_policy(\n        policyName=policy,\n        target=cert\n    )\n\ndef detach(policy, cert):\n    response = client.detach_policy(\n        policyName=policy,\n        target=cert\n    )\n\ndef lambda_handler(event, context):\n    vin_number = event['vin']\n    \n    response = client.list_thing_principals(\n        thingName=vin_number\n    )\n    cert = response['principals'][0]\n    \n    desired = event['desired']\n    if desired['trip_bool'] == True:\n        attach(\"PublishTripData\", cert)\n    else:\n        detach(\"PublishTripData\", cert)\n    \n    if desired['dtc_bool'] == True:\n        attach(\"PublishDiagnosticsTroubleCodes\", cert)\n    else:\n        detach(\"PublishDiagnosticsTroubleCodes\", cert)\n        \n    if desired['telemetry_bool'] == True:\n        attach(\"PublishTelemetry\", cert)\n    else:\n        detach(\"PublishTelemetry\", cert)\n    \n    return {\n        'statusCode': 200,\n        'body': json.dumps('Policies Updated')\n    }"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "PolicyAssociationLambdaRole",
+            "Arn"
+          ]
+        },
+        "FunctionName": "ConnectedVehicle-AdjustPolicies-Lambda",
+        "Handler": "index.lambda_handler",
+        "Runtime": "python3.9",
+        "Timeout": 300
+      },
+      "DependsOn": [
+        "PolicyAssociationLambdaRole"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "IotCdkStack/Singleton/Resource"
+      }
+    },
+    "iotRule": {
+      "Type": "AWS::IoT::TopicRule",
+      "Properties": {
+        "TopicRulePayload": {
+          "Actions": [
+            {
+              "Lambda": {
+                "FunctionArn": {
+                  "Fn::GetAtt": [
+                    "PolicyAssociationLambda",
+                    "Arn"
+                  ]
+                }
+              }
+            }
+          ],
+          "Sql": "SELECT topic(3) as vin, state.desired FROM '$aws/things/+/shadow/name/+/update/accepted'"
+        },
+        "RuleName": "ConnectedVehiclePolicyUpdate"
+      }
+    }
+  }
+}

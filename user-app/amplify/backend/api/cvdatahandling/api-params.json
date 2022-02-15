@@ -1,0 +1,82 @@
+{
+  "paths": [
+    {
+      "name": "/vehicles",
+      "lambdaFunction": "vehicleGet",
+      "privacy": {
+        "private": true,
+        "auth": [
+          "/GET"
+        ]
+      },
+      "policyResourceName": "/vehicles"
+    },
+    {
+      "name": "/vehicle/add",
+      "lambdaFunction": "vehicleAdd",
+      "privacy": {
+        "private": true,
+        "auth": [
+          "/GET"
+        ]
+      },
+      "policyResourceName": "/vehicle/add"
+    },
+    {
+      "name": "/vehicle/delete",
+      "lambdaFunction": "vehicleDelete",
+      "privacy": {
+        "private": true,
+        "auth": [
+          "/GET"
+        ]
+      },
+      "policyResourceName": "/vehicle/delete"
+    }
+  ],
+  "resourceName": "cvdatahandling",
+  "apiName": "cvdatahandling",
+  "functionArns": [
+    {
+      "lambdaFunction": "vehicleGet"
+    },
+    {
+      "lambdaFunction": "vehicleAdd"
+    },
+    {
+      "lambdaFunction": "vehicleDelete"
+    }
+  ],
+  "privacy": {
+    "auth": 3,
+    "unauth": 0,
+    "authRoleName": "amplify-userapp-dev-220144-authRole",
+    "unAuthRoleName": "amplify-userapp-dev-220144-unauthRole"
+  },
+  "dependsOn": [
+    {
+      "category": "function",
+      "resourceName": "vehicleGet",
+      "attributes": [
+        "Name",
+        "Arn"
+      ]
+    },
+    {
+      "category": "function",
+      "resourceName": "vehicleAdd",
+      "attributes": [
+        "Name",
+        "Arn"
+      ]
+    },
+    {
+      "category": "function",
+      "resourceName": "vehicleDelete",
+      "attributes": [
+        "Name",
+        "Arn"
+      ]
+    }
+  ]
+}
