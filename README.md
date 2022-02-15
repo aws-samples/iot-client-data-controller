@@ -126,7 +126,7 @@ And eventually host the frontend so it can be access via the internet
     amplify publish
     
 
-# Testing the solution
+## Testing the solution
 
 Now that everything is in place to control the incoming data, we can simulate it using a dummy vehicle.
 
@@ -176,11 +176,11 @@ In the current implementation the following data categories are set up.
 | Diagnostics trouble codes | connectedcar/dtc/# | PublishDiagnosticsTroubleCodes |
 | Telematics data | connectedcar/telemetry/# | PublishTelemetry |
 
-# Outlook
+## Outlook
 
 Now the vehicle owner has control over which data is processed further. But it is still up to the platform owner (i.e. automotive OEM), which options are presented to the customer. One aspiring thought is to include the customer into the data value chain. So the vehicle owner could agree for his anonymized data to be published, for which in return a share of data revenue will be paid. Similar approaches already exist for browsers like for example https://gener8ads.com/. This would limit the amount of revenue the OEM would generate with the data, but it would be a real brand differentiator.
 
-## Solution Outline
+### Solution Outline
 
 A possible implementation for this could happen using Web 3.0 frameworks, where ownership and entitlement to use assets are controlled with blockchain technology.
 
@@ -197,7 +197,7 @@ Running on this Compute-to-Data environment, an [algorithm](https://docs.oceanpr
 Finally through a data marketplace the usage of these algorithms could be published and consumed. All with an underlaying exchange of tokens to facilitate the transactions.
 
 
-# License Summary
+## License Summary
 
 This sample code is made available under the MIT-0 license. See the LICENSE file.
 
